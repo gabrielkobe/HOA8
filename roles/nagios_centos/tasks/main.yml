@@ -1,0 +1,32 @@
+---
+- name: Install Nagios Packages
+  yum:
+    name: 
+      - nagios-plugins-all
+      - nagios 
+    state: present
+
+- name: Enable and start Nagios (CentOS)
+  systemd:
+    name: nagios
+    enabled: yes
+    state: started
+  when: ansible_distribution == "CentOS"
+
+- name: Create Nagios htpasswd file
+  command: htpasswd -c /etc/nagios/passwd gabriel password123
+  args: 
+    creates: /usr/local/nagios/passwd/etc/htpasswd.users
+  become: true
+
+- name: Modify Apache config
+  blockinfile:
+    path: /etc/httpd/conf.d/nagios.conf
+    block:
+      <Directory "/usr/local/nagios/sbin>
+          AuthType Basic
+          AuthName "Nagios Access"
+          AuthUserFiles /usr/local/nagios/stc/htpasswd.users
+          Require valid-user
+      </Directory>
+  become: true
